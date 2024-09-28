@@ -208,34 +208,30 @@ async function main() {
     })
 
 
-    //We use app. post for HTTP Method put.
-    app.put("/recipes/:id", async function (req, res) {
-        let recipeId = req.params.id;
+    app.put('/recipes/:id', async (req, res) => {
         try {
-            //name, cuisine, prpeTime, cookTime, servings, ingredients, instructions and tags;
-            //To note: When we use POST,PATCH or PUT to send data to server, the data are in req.body.
-
+            const recipeId = req.params.id;
             const { name, cuisine, prepTime, cookTime, servings, ingredients, instructions, tags } = req.body;
-
+    
             // Basic validation
             if (!name || !cuisine || !ingredients || !instructions || !tags) {
                 return res.status(400).json({ error: 'Missing required fields' });
             }
-
+    
             // Fetch the cuisine document
             const cuisineDoc = await db.collection('cuisines').findOne({ name: cuisine });
             if (!cuisineDoc) {
                 return res.status(400).json({ error: 'Invalid cuisine' });
             }
-
+    
             // Fetch the tag documents
             const tagDocs = await db.collection('tags').find({ name: { $in: tags } }).toArray();
             if (tagDocs.length !== tags.length) {
                 return res.status(400).json({ error: 'One or more invalid tags' });
             }
-
-            // Create the new recipe object
-            const updateRecipe = {
+    
+            // Create the updated recipe object
+            const updatedRecipe = {
                 name,
                 cuisine: {
                     _id: cuisineDoc._id,
@@ -251,31 +247,27 @@ async function main() {
                     name: tag.name
                 }))
             };
-
-            // Insert the new recipe into the database
-            const result1 = await db.collection('recipes').updateOne(
+    
+            // Update the recipe in the database
+            const result = await db.collection('recipes').updateOne(
                 { _id: new ObjectId(recipeId) },
                 { $set: updatedRecipe }
             );
-
-            if(result1.matchedCount == 0)
-            {
-                return res.status(404).json({
-                    "error": "Recipe not found"
-                })
+    
+            if (result.matchedCount === 0) {
+                return res.status(404).json({ error: 'Recipe not found' });
             }
-
-            // Send back the created recipe
-            res.status(201).json({
-                message: 'Recipe updated successfully',
+    
+            // Send back the success response
+            res.json({
+                message: 'Recipe updated successfully'
             });
-
         } catch (error) {
-            console.error('Error creating recipe:', error);
+            console.error('Error updating recipe:', error);
             res.status(500).json({ error: 'Internal server error' });
         }
+    });
 
-    })
 
 
 
