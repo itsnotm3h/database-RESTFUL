@@ -269,6 +269,37 @@ async function main() {
     });
 
 
+    //app.delete()
+    app.delete("/recipes/:id", async function (req,res){
+
+        try{
+            const recipeId = req.params.id;
+
+            //this is to get the document by id and deleting the entry. 
+            // This is the most similar tot the mongoDB function. 
+            const result = await db.collection("recipes").deleteOne({_id:new ObjectId(recipeId)});
+    
+            // res.json({
+            //     'result': result
+            // })
+    
+            if(result.deletedCount === 0)
+            {
+                return res.status(404).json({"error":"Record is not found"});
+            }
+    
+            //this is to send a response message
+            res.json({"message":"Reciepe is successfully deleted."});
+
+        }
+        catch(error){
+
+            console.error("Error deleting reciepe:", error);
+            res.status(500).json({error: "Internal server error"});
+        }      
+    })
+
+
 
 
 }
