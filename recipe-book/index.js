@@ -2,12 +2,44 @@
 const express = require('express');
 const cors = require('cors');
 //to import the use of objectID from mongodb
-const { ObjectId } = require('mongodb');
+const { ObjectId, ReturnDocument } = require('mongodb');
 const MongoClient = require('mongodb').MongoClient;
 const dbName = 'recipe_book';
+const bcrypt = require("bcrypt");
+const jwt = require('jsonwebtoken');
+
 
 //enable dotenv
 require('dotenv').config();
+
+//generate access token
+// Access token to grant access to the API
+// there is on refresh token as well.  
+const generateAccessToken = (id,email) => {
+  return jwt.sign({
+    'user_id':id,
+    'email':email
+  },process.env.TOKEN_SECRET,{
+    expiresIn:"1h"
+  })
+}
+
+//Verify token
+
+const verifyToken = (req,res,next) =>{
+    //this is to get the header so that contain the token;
+    const authHeader = req.headers['authorization'];
+    //as the token will be return BEARER <TOKEN>, we want to just extract the <TOKEN>
+    const token = authHeader && authHeader.split(' ')[1];
+    if(!token) return res.sendStatus(403);
+    // to verify if the token is the same as in the we have stored. 
+    jwt.verify(token, process.env.TOKEN_SECRET, (err,user)=>{
+        //if there it doesnt match it return error
+        if(err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+}
 
 //set the URL form the .env file. 
 //MONGO_URI must be the same as declared in env.
@@ -300,7 +332,77 @@ async function main() {
     })
 
 
+    //route for user signup.
+    //user must provide an email and password.  
+    app.post('/users', async function(req,res){
 
+        try{
+            let {email,password} = req.body;
+            if(!email || !password)
+            {
+                return res.status(400).json({
+                    "error":"Please provide user name and password."
+                })
+            }
+                const result = await db.collection("users").insertOne({
+                    'email': req.body.email,
+                    'password': await bcrypt.hash(req.body.password, 12)
+                });
+            
+
+            res.json({
+                "message":"New user account created.",
+                "result": result
+            })
+
+
+        }
+        catch(error)
+        {
+            console.error(e);
+            res.status(500);
+
+        }
+
+    })
+
+    // generateAccessToken
+    app.post('/login', async (req, res) => {
+        const { email, password } = req.body;
+
+        //to check if email and password is entered. 
+        if(!email || !password)
+        {
+            return res.status(400).json({
+                "message":"Email and password are required"
+            })
+        }
+        const user = await db.collection('users').findOne({
+            email:email
+        });
+
+        //to return error message when no user is found.  
+        if(!user)
+        {
+            return res.status(404);
+        }
+        const validatePassword = await bcrypt.compare(password,user.password);
+        //to check if password is correct. 
+        if(!validatePassword){
+            return res.status(401);
+        }
+        const accessToken = generateAccessToken(user._id,user.email);
+        res.json({accessToken:accessToken});
+
+    })
+
+    //add verifyToken to protect the route.
+    app.get("/profile", verifyToken, function (req,res){
+        res.json({
+            message:"this is a protected route",user:req.user
+        });
+    })
+       
 
 }
 

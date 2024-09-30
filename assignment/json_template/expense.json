@@ -1,0 +1,11 @@
+//Expense_log
+{
+    "_id":"",
+    "author":"",
+    "dateTime":"",
+    "description":"One sentence on what is paid",
+    "cost":20,
+    "paymentType":"Cash,Card,GIRO",
+    "category":"Transport,Food,Entertainment",
+    "status":"Paid,Overdue"
+}
