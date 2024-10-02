@@ -100,7 +100,6 @@ async function main() {
     });
 
     // /reciepes/1234A -> get the details of the recipe via their id. 
-
     app.get("/recipes/:id", async function (req, res) {
         try {
 
@@ -164,7 +163,7 @@ async function main() {
                 }
             }
 
-            const recipes = await db.collection('recipes').find(query).project({
+            const recipes = await db.collection('recipes').find(criteria).project({
                 name: 1,
                 'cuisine.name': 1,
                 'tags.name': 1,
