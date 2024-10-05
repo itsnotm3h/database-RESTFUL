@@ -37,9 +37,9 @@ app.use(cors()); // enable cross origin resource sharing.  // however we can onl
 // }
 
 //generate Token Access
-const generateAccessToken = function ( name, role) {
+const generateAccessToken = function (userName, role) {
     return jwt.sign({
-        'userId': name,
+        'userName': userName,
         'role': role
     }, process.env.SECRET_TOKEN, {
         expiresIn: "1h"
@@ -47,15 +47,18 @@ const generateAccessToken = function ( name, role) {
 }
 
 //VerifyToken
-const verifyToken = (req,res,next)=>{
+const verifyToken = (req, res, next) => {
     const authHeader = req.headers["authorization"];
-    const token = authHeader && authHeader.split(",");
-    if (!token)
-    {
+
+    //must make sure that this is " " as the authorization return Bearer <token>
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token) {
         return res.sendStatus(403);
     }
-    jwt.verify(token, process.env.SECRET_TOKEN,(error,user)=>{
-        req.user = user;
+    jwt.verify(token, process.env.SECRET_TOKEN, (error, userDetail) => {
+        //this is to pass information in the token. 
+        //I can access userName, role.
+        req.user = userDetail;
         next();
     })
 
@@ -75,43 +78,41 @@ async function main() {
 
 
     //Route to: Sign Up
-    app.post("/register", async function(req,res){
+    app.post("/register", async function (req, res) {
         const registerEntry = await db.collection('users').insertOne({
-            'userName':req.body.userName,
-            'email':req.body.email,
-            'password': await bcrypt.hash(req.body.password,12),
-            'role':req.body.role
+            'userName': req.body.userName,
+            'email': req.body.email,
+            'password': await bcrypt.hash(req.body.password, 12),
+            'role': req.body.role
         })
         res.json({
-            message:"New user account created", 
+            message: "New user account created",
             result: registerEntry
         })
     })
 
     //Route to login:
-    app.post("/login", async (req,res)=>{
-        const {userName,password} = req.body;
-        if(!userName || !password){
+    app.post("/login", async (req, res) => {
+        const { userName, password } = req.body;
+        if (!userName || !password) {
             return res.status(400).json({
-            message:"Email and password are required"
+                message: "Email and password are required"
             });
         }
-        const userFind = await db.collection('users').findOne({userName:userName})
-        if(!userFind)
-        {
-            return res.status(400).json({message:"User not found."})
+        const userFind = await db.collection('users').findOne({ userName: userName })
+        if (!userFind) {
+            return res.status(400).json({ message: "User not found." })
         }
-        const checkPassword = await bcrypt.compare(password,userFind.password);
-        if(!checkPassword)
-        {
-            return res.status(400).json({message:"Password is incorrect."})
+        const checkPassword = await bcrypt.compare(password, userFind.password);
+        if (!checkPassword) {
+            return res.status(400).json({ message: "Password is incorrect." })
         }
 
 
         // const generateAccessToken = function (id, name, email,role) {
 
 
-        const accessToken = generateAccessToken (userFind._id,userFind.role);
+        const accessToken = generateAccessToken(userFind.userName, userFind.role);
         res.json({
             accessToken: accessToken
         });
@@ -177,9 +178,22 @@ async function main() {
 
 
     //Route to: Reading all data records
-    app.get("/expenses", async function (req, res) {
+    app.get("/expenses", verifyToken, async function (req, res) {
         try {
-            const expenses = await db.collection("expenses").find().project({
+            let findQuery;
+            if (req.user.role == 'admin') {
+                findQuery = {};
+                // res.status(403).json({ message: 'Access denied. Admins only.' });
+            }
+            if (req.user.role == 'user') {
+                findQuery = { userName: findQuery };
+            }
+            else {
+                res.status(404).json({ message: "Please login" })
+            }
+
+            const expenses = await db.collection("expenses").find(findQuery).project({
+                userName: 1,
                 dateTime: 1,
                 description: 1,
                 cost: 1,
@@ -189,6 +203,8 @@ async function main() {
             }).toArray();
 
             res.json({ expenses });
+
+
         }
         catch (error) {
             console.error("Error in fetching all expenses:", error);
@@ -246,7 +262,7 @@ async function main() {
 
 
             const searchEntry = await db.collection('expenses').find(criteria).project({
-                _id:1,
+                _id: 1,
                 dateTime: 1,
                 description: 1,
                 cost: 1,
@@ -275,7 +291,7 @@ async function main() {
 
 
     ///Route for user to read their own info/
-    
+
 
     //Route to update record.
 
@@ -287,7 +303,7 @@ async function main() {
             let { userName, dateTime, description, cost, paymentType, category, status } = req.body;
 
 
-            if (!userName,!dateTime || !description || !cost || !paymentType || !category || !status) {
+            if (!userName, !dateTime || !description || !cost || !paymentType || !category || !status) {
                 res.status(404).json({ message: "Input is not complete." });
             }
             if (cost) {
@@ -342,7 +358,7 @@ async function main() {
                 return res.status(404).json({ error: 'Expense not found' });
             }
 
-            res.json({message:"Successfully updated the expense entry"})
+            res.json({ message: "Successfully updated the expense entry" })
 
 
 
@@ -358,9 +374,9 @@ async function main() {
 
 
     // Route to delete
-    app.delete("/delete/:id", verifyToken, async function(req,res){
+    app.delete("/delete/:id", verifyToken, async function (req, res) {
 
-        try{
+        try {
 
             let id = req.params.id;
 
@@ -371,18 +387,17 @@ async function main() {
             //     res.status(404).json({message:"There is no such entry"})
 
             // }
-            const deleteEntry = await db.collection("expenses").deleteOne({ _id:new ObjectId(id) })
+            const deleteEntry = await db.collection("expenses").deleteOne({ _id: new ObjectId(id) })
 
             if (deleteEntry.matchedCount === 0) {
                 return res.status(404).json({ error: 'Expense not found' });
             }
 
-            res.json({message:"Entry is deleted."});
+            res.json({ message: "Entry is deleted." });
 
         }
-        catch(error)
-        {
-            res.status(500).json({message:"Internal Server Error."})
+        catch (error) {
+            res.status(500).json({ message: "Internal Server Error." })
 
         }
     })

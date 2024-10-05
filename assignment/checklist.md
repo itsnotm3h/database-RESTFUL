@@ -3,8 +3,7 @@ Your Express application must implement the following operations as part of a
 RESTFul API:
 
 ### Reading all data records
-- Show full list of expenses with their own username. 
-- Show full list of expenses with their own user Id. 
+- Show full list of expenses with their own username. - done
 - Super admin can see all the expenses. - done
 
 ### Search for data records given search terms
