@@ -136,7 +136,7 @@ async function main() {
 
             if(cost){
                 // let becomeNumber = parseFloat(cost)
-                criteria["cost"] = parseFloat(cost);
+                criteria.cost = parseFloat(cost);
             }
 
             if(userName){
