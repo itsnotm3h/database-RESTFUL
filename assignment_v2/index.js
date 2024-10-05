@@ -24,20 +24,12 @@ const app = express();
 app.use(express.json());
 app.use(cors()); // enable cross origin resource sharing.  // however we can only prevent some people from using. // it only works for browser, it will not stop anyone. //doesnt prevent ddos attack. 
 
-// 1b.Setup jwt function
-// const generateAccessToken = function (id, name, email, role) {
-//     return jwt.sign({
-//         'user_id': id,
-//         'user_name': name,
-//         'email': email,
-//         'role': role
-//     }, process.env.SECRET_TOKEN, {
-//         expiresIn: "1h"
-//     });
-// }
 
 //generate Token Access
 const generateAccessToken = function (userName, role) {
+
+    // jwt has 2 parameter
+    // jwt.sign({payload,secretKey});
     return jwt.sign({
         'userName': userName,
         'role': role
@@ -56,8 +48,7 @@ const verifyToken = (req, res, next) => {
         return res.sendStatus(403);
     }
     jwt.verify(token, process.env.SECRET_TOKEN, (error, userDetail) => {
-        //this is to pass information in the token. 
-        //I can access userName, role.
+        //I can access payload userName, role which i have done in jwt.sign
         req.user = userDetail;
         next();
     })
@@ -108,10 +99,6 @@ async function main() {
             return res.status(400).json({ message: "Password is incorrect." })
         }
 
-
-        // const generateAccessToken = function (id, name, email,role) {
-
-
         const accessToken = generateAccessToken(userFind.userName, userFind.role);
         res.json({
             accessToken: accessToken
@@ -127,19 +114,19 @@ async function main() {
                 return res.status(400).json({ error: "Missing required fields" })
             }
 
-            const paymentCheckDoc = await db.collection("paymentMethods").findOne({ name: paymentType });
+            const paymentCheckDoc = await db.collection("paymentMethods").findOne({ "name":paymentType });
 
             if (!paymentCheckDoc) {
                 return res.status(400).json({ error: "Invalid Payment Methods" })
             }
 
-            const categoryCheckDoc = await db.collection("category").findOne({ name: category });
+            const categoryCheckDoc = await db.collection("category").findOne({ "name": category });
 
             if (!categoryCheckDoc) {
                 return res.status(400).json({ error: "Invalid category" })
             }
 
-            const statusCheckDoc = await db.collection("status").findOne({ name: status });
+            const statusCheckDoc = await db.collection("status").findOne({ "name": status });
 
             if (!statusCheckDoc) {
                 return res.status(400).json({ error: "Invalid status" })
@@ -151,15 +138,15 @@ async function main() {
                 description,
                 cost, // do i need to check if its a number.
                 paymentType: {
-                    _id: paymentCheckDoc._id,
+                    id: paymentCheckDoc._id,
                     name: paymentCheckDoc.name
                 },
                 category: {
-                    _id: categoryCheckDoc._id,
+                    id: categoryCheckDoc._id,
                     name: categoryCheckDoc.name
                 },
                 status: {
-                    _id: statusCheckDoc._id,
+                    id: statusCheckDoc._id,
                     name: statusCheckDoc.name
                 }
             };
@@ -215,9 +202,12 @@ async function main() {
 
 
     //Route to search with query:
-    app.get("/search", async function (req, res) {
+    app.get("/search", verifyToken, async function (req, res) {
         try {
-            let { id, userName, dateTime, description, cost, paymentType, category, status } = req.query;
+
+            let currentUser = req.user.userName;
+
+            let { id, dateTime, description, cost, paymentType, category, status } = req.query;
             let criteria = {};
 
             if (id) {
@@ -243,9 +233,9 @@ async function main() {
                 criteria.description = { $regex: description, $options: 'i' };
             }
 
-            if (userName) {
+            if (currentUser) {
                 // let becomeNumber = parseFloat(cost)
-                criteria.userName = userName;
+                criteria.userName = currentUser;
             }
 
             if (paymentType) {
@@ -263,6 +253,7 @@ async function main() {
 
             const searchEntry = await db.collection('expenses').find(criteria).project({
                 _id: 1,
+                userName:1,
                 dateTime: 1,
                 description: 1,
                 cost: 1,
@@ -300,10 +291,10 @@ async function main() {
         try {
 
             let id = req.params.id;
-            let { userName, dateTime, description, cost, paymentType, category, status } = req.body;
+            let { dateTime, description, cost, paymentType, category, status } = req.body;
 
 
-            if (!userName, !dateTime || !description || !cost || !paymentType || !category || !status) {
+            if (!dateTime || !description || !cost || !paymentType || !category || !status) {
                 res.status(404).json({ message: "Input is not complete." });
             }
             if (cost) {
@@ -313,36 +304,35 @@ async function main() {
                 dateTime = new Date(dateTime).toISOString();
             }
             //key:valueoftquery.
-            const paymentTypeCollection = await db.collection("paymentMethods").findOne({ name: paymentType });
+            const paymentTypeCollection = await db.collection("paymentMethods").findOne({ "name": paymentType });
             if (!paymentTypeCollection) {
                 res.status(401).json({ message: "Invaild paymentType" });
             }
 
-            const categoryCollection = await db.collection("category").findOne({ name: category });
+            const categoryCollection = await db.collection("category").findOne({ "name": category });
             if (!categoryCollection) {
                 res.status(401).json({ message: "Invaild Category" });
             }
 
-            const statusCollection = await db.collection("status").findOne({ name: status });
+            const statusCollection = await db.collection("status").findOne({ "name": status });
             if (!statusCollection) {
                 res.status(401).json({ message: "Invaild Status." });
             }
 
             const updateEntry = {
-                userName,
                 dateTime,
                 description,
                 cost,
                 paymentType: {
-                    _id: paymentTypeCollection.id,
+                    id: paymentTypeCollection._id,
                     name: paymentTypeCollection.name
                 },
                 category: {
-                    _id: categoryCollection.id,
+                    id: categoryCollection._id,
                     name: categoryCollection.name
                 },
                 status: {
-                    _id: statusCollection.id,
+                    id: statusCollection._id,
                     name: statusCollection.name
                 }
 
