@@ -1,0 +1,49 @@
+[
+    {
+        "userName":"",
+        "dateTime":"",
+        "description":"One sentence on what is paid",
+        "cost":20,
+        "paymentType":"Cash,Card,GIRO",
+        "category":"Transport,Food,Entertainment,necessaity",
+        "status":"Paid,Overdue"
+    },
+    {
+        "userName":"AQ",
+        "dateTime":"2024-09-01T08:00:00Z",
+        "description":"Breakfast sandwich",
+        "cost":6,
+        "paymentType":[{"id":{ "$oid":"66fb89bc8e98e935d7ddabfa"},"name":"Paynow"}],
+        "category":[{"id":{ "$oid":"66faa9ea3cb8a504b80ae038"},"name":"Food"}],
+        "status":[{"id":{ "$oid":"66fbaf6d8e98e935d7ddac26"},"name":"Paid"}]
+    },
+    {
+        "userName":"Matthew",
+        "dateTime":"2024-09-01T08:10:00Z",
+        "description":"Breakfast-Latte",
+        "cost":4.50,
+        "paymentType":[{"id":{ "$oid":"66fb89bc8e98e935d7ddabfa"},"name":"Paynow"}],
+        "category":[{"id":{ "$oid":"66faa9ea3cb8a504b80ae038"},"name":"Food"}],
+        "status":[{"id":{ "$oid":"66fbaf6d8e98e935d7ddac26"},"name":"Paid"}]
+    }
+    ,
+    {
+        "userName":"Matthew",
+        "dateTime":"2024-09-03T16:45:00Z",
+        "description":"Phone bill for september",
+        "cost":70,
+        "paymentType":[{"id":{ "$oid":"66fb89bc8e98e935d7ddabfb"},"name":"Credit card"}],
+        "category":[{"id":{ "$oid":"66faa9ea3cb8a504b80ae039"},"name":"Bills"}],
+        "status":[{"id":{ "$oid":"66fbaf6d8e98e935d7ddac27"},"name":"Overdue"}]
+    },
+    {
+        "userName":"AQ",
+        "dateTime":"2024-09-07T12:30:00Z",
+        "description":"Insurance",
+        "cost":350,
+        "paymentType":[{"id":{ "$oid":"66fb89bc8e98e935d7ddabf9"},"name":"GIRO"}],
+        "category":[{"id":{ "$oid":"66faa9ea3cb8a504b80ae039"},"name":"Bills"}],
+        "status":[{"id":{ "$oid":"66fbaf6d8e98e935d7ddac26"},"name":"Paid"}]
+    }
+ 
+]

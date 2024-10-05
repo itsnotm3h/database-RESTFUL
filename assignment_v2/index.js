@@ -37,10 +37,10 @@ app.use(cors()); // enable cross origin resource sharing.  // however we can onl
 // }
 
 //generate Token Access
-const generateAccessToken = function (id, email) {
+const generateAccessToken = function ( name, role) {
     return jwt.sign({
-        'userId': id,
-        'email': email,
+        'userId': name,
+        'role': role
     }, process.env.SECRET_TOKEN, {
         expiresIn: "1h"
     });
@@ -107,7 +107,11 @@ async function main() {
             return res.status(400).json({message:"Password is incorrect."})
         }
 
-        const accessToken = generateAccessToken (userFind._id,userFind.email);
+
+        // const generateAccessToken = function (id, name, email,role) {
+
+
+        const accessToken = generateAccessToken (userFind._id,userFind.role);
         res.json({
             accessToken: accessToken
         });
