@@ -108,10 +108,16 @@ async function main() {
     //Route to: Create new expenses entry. 
     app.post("/createEntry", async (req, res) => {
         try {
+            let startDate;
             const { userName, dateTime, description, cost, paymentType, category, status } = req.body;
 
             if (!userName || !dateTime || !description || !cost || !paymentType || !category || !status) {
                 return res.status(400).json({ error: "Missing required fields" })
+            }
+
+            if(dateTime)
+            {
+                startDate = new Date(dateTime).toISOString();
             }
 
             const paymentCheckDoc = await db.collection("paymentMethods").findOne({ "name":paymentType });
@@ -132,9 +138,15 @@ async function main() {
                 return res.status(400).json({ error: "Invalid status" })
             }
 
+
+            // if (dateTime) {
+            //     dateTime = new Date(dateTime).toISOString();
+            //     console.log(dateTime);
+            // }
+
             const newEntry = {
                 userName,
-                dateTime, //need to check how to verify the date and time. 
+                dateTime:startDate, //need to check how to verify the date and time. 
                 description,
                 cost, // do i need to check if its a number.
                 paymentType: {
@@ -170,10 +182,11 @@ async function main() {
             let findQuery;
             if (req.user.role == 'admin') {
                 findQuery = {};
+                console.log(findQuery);
                 // res.status(403).json({ message: 'Access denied. Admins only.' });
             }
-            if (req.user.role == 'user') {
-                findQuery = { userName: findQuery };
+            else if (req.user.role == 'user') {
+                findQuery = { userName: req.user.userName };
             }
             else {
                 res.status(404).json({ message: "Please login" })
@@ -207,7 +220,7 @@ async function main() {
 
             let currentUser = req.user.userName;
 
-            let { id, dateTime, description, cost, paymentType, category, status } = req.query;
+            let { id,dateTime, description, cost, paymentType, category, status } = req.query;
             let criteria = {};
 
             if (id) {
@@ -235,7 +248,7 @@ async function main() {
 
             if (currentUser) {
                 // let becomeNumber = parseFloat(cost)
-                criteria.userName = currentUser;
+                criteria.userName  = currentUser;
             }
 
             if (paymentType) {
@@ -261,6 +274,8 @@ async function main() {
                 category: 1,
                 status: 1
             }).toArray();
+
+            console.log(searchEntry);
 
 
             //if the search turns up empty. 
@@ -291,6 +306,7 @@ async function main() {
         try {
 
             let id = req.params.id;
+            let changeDate;
             let { dateTime, description, cost, paymentType, category, status } = req.body;
 
 
@@ -301,7 +317,7 @@ async function main() {
                 cost = parseFloat(cost);
             }
             if (dateTime) {
-                dateTime = new Date(dateTime).toISOString();
+                changeDate = (new Date(dateTime)).toISOString();
             }
             //key:valueoftquery.
             const paymentTypeCollection = await db.collection("paymentMethods").findOne({ "name": paymentType });
@@ -320,7 +336,7 @@ async function main() {
             }
 
             const updateEntry = {
-                dateTime,
+                dateTime:changeDate,
                 description,
                 cost,
                 paymentType: {
